@@ -38,8 +38,13 @@ MONGOD_ARGS=[]
 
 # Note this reports a lot of false positives.
 USE_VALGRIND=False
-VALGRIND_ARGS=["valgrind", "--log-file=/tmp/mongos-%p.valgrind", "--leak-check=yes", 
-               ("--suppressions="+MONGO_PATH+"valgrind.suppressions"), "--"]
+VALGRIND_ARGS = [
+    "valgrind",
+    "--log-file=/tmp/mongos-%p.valgrind",
+    "--leak-check=yes",
+    f"--suppressions={MONGO_PATH}valgrind.suppressions",
+    "--",
+]
 
 # see http://pueblo.sourceforge.net/doc/manual/ansi_color_codes.html
 CONFIG_COLOR=31 #red
@@ -57,7 +62,7 @@ def AFTER_SETUP():
 
     for (collection, keystr) in COLLECTION_KEYS.iteritems():
         key=SON((k,1) for k in keystr.split(','))
-        admin.command('shardcollection', 'test.'+collection, key=key)
+        admin.command('shardcollection', f'test.{collection}', key=key)
 
     admin.command('shardcollection', 'test.fs.files', key={'_id':1})
     admin.command('shardcollection', 'test.fs.chunks', key={'files_id':1})
@@ -122,10 +127,7 @@ atexit.register(killAllSubs)
 
 def mkcolor(colorcode): 
     base = '\x1b[%sm'
-    if BOLD:
-        return (base*2) % (1, colorcode)
-    else:
-        return base % colorcode
+    return (base*2) % (1, colorcode) if BOLD else base % colorcode
 
 def ascolor(color, text):
     return mkcolor(color) + text + mkcolor(RESET)

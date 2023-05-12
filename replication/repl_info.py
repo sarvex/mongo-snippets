@@ -24,16 +24,12 @@ def compute_diff( slaveHost="localhost" , port=27017 ):
     print( lastOp )
 
     diffSeconds = lastOpSeconds - lastSyncedSeconds
-    print( "slave is behind by: %s seconds" % diffSeconds )
+    print(f"slave is behind by: {diffSeconds} seconds")
 
 
 if __name__ == "__main__":
-    host = "localhost"
-    port = 27017
-    if len( sys.argv ) > 1:
-        host = sys.argv[1]
-    if len( sys.argv ) > 2:
-        port = int( sys.argv[2] )
+    host = sys.argv[1] if len( sys.argv ) > 1 else "localhost"
+    port = int( sys.argv[2] ) if len( sys.argv ) > 2 else 27017
     print( compute_diff( host , port ) )
 
 

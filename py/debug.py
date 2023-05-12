@@ -50,11 +50,8 @@ print_("This will take about 30 seconds...please be patient")
 print_("===================================================")
 print_("")
 
-PORT = 27017
-if len(sys.argv) >= 2:
-    PORT = int(sys.argv[1])
-
-print_("using port: %s"%PORT)
+PORT = int(sys.argv[1]) if len(sys.argv) >= 2 else 27017
+print_(f"using port: {PORT}")
 
 conn = pymongo.Connection(port=PORT)
 conn.document_class = SON
@@ -65,8 +62,8 @@ cmdline_opts = admin.command('getCmdLineOpts')['argv']
 config_file = []
 for i in range(len(cmdline_opts)):
     if cmdline_opts[i] == '--logpath':
-        pass # TODO something
-    elif cmdline_opts[i] == '--dbpath':
+        continue
+    if cmdline_opts[i] == '--dbpath':
         DBPATH = cmdline_opts[i+1]
     elif cmdline_opts[i] in ['-f', '--config']:
         config_file = open(cmdline_opts[i+1]).readlines()
@@ -90,14 +87,11 @@ def runInThreadNow(func):
     all_threads.append(t)
 
 def cmdName(cmd):
-    if isinstance(cmd, basestring):
-        return cmd
-    else:
-        return ' '.join(cmd)
+    return cmd if isinstance(cmd, basestring) else ' '.join(cmd)
 
 cmd_output = SON()
 def runOnce(cmd):
-    print_("running %s"%cmdName(cmd))
+    print_(f"running {cmdName(cmd)}")
     output = []
     cmd_output[cmdName(cmd)] = output
 
@@ -105,12 +99,14 @@ def runOnce(cmd):
     def runner():
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=isinstance(cmd, basestring))
         if proc.wait() != 0:
-            print_("#### '%s' failed to execute properly. check output for details"%cmdName(cmd))
+            print_(
+                f"#### '{cmdName(cmd)}' failed to execute properly. check output for details"
+            )
         output.append(proc.stdout.read())
     
 
 def runForAWhile(cmd, secs=30):
-    print_("running %s"%cmdName(cmd))
+    print_(f"running {cmdName(cmd)}")
     output = []
     cmd_output[cmdName(cmd)] = output
 
@@ -125,7 +121,9 @@ def runForAWhile(cmd, secs=30):
             output.append(proc.stdout.readline()) #TODO timestamp?
 
         if proc.poll() != 0:
-            print_("#### '%s' failed to execute properly. check output for details"%cmdName(cmd))
+            print_(
+                f"#### '{cmdName(cmd)}' failed to execute properly. check output for details"
+            )
 
         try:
             os.kill(proc.pid, signal.SIGINT)
@@ -141,7 +139,7 @@ def getStatuses():
         if i != 0:
             sleep(10)
 
-        print_("fetching serverStatus #%s"%(i+1))
+        print_(f"fetching serverStatus #{i + 1}")
 
         stat = admin.command('serverStatus')
         statuses.append(stat)

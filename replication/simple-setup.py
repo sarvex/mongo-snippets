@@ -65,16 +65,13 @@ if not os.path.exists( mongod ):
     for x in alternates:
         if os.path.exists( x ):
             mongod = x
-    
+
     if not os.path.exists( mongod ):
         raise Exception( "can't find mongod" )
 
 # check whether SSL is enabled, if it is then set the SSL variable to True
 # simplifies things later on
-if options.ssl == "True":
-    SSL = True
-else:
-    SSL = False
+SSL = options.ssl == "True"
 
 
 # Just get a different color code to use based on n.

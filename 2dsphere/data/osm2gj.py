@@ -3,6 +3,7 @@ json that can then be imported into MongoDB. Note - currently
 the script generates Nodes only. Set write_nodes_and_quit to false
 after generating nodes to generate lines and polygons"""
 
+
 import xml.parsers.expat
 import os.path
 import json
@@ -15,30 +16,40 @@ write_ways_and_quit = True
 node_id = ""
 node_attr = {}
 
-allowed_attr = set(['name', 'leisure', 'highway', 'natural', 'waterway', 'railway', 'wheelchair', 'oneway', 'lanes', 'landuse', 'name', 'place', 'shop', 'amenity'])
+allowed_attr = {
+    'leisure',
+    'highway',
+    'natural',
+    'waterway',
+    'railway',
+    'wheelchair',
+    'oneway',
+    'lanes',
+    'landuse',
+    'name',
+    'place',
+    'shop',
+    'amenity',
+}
 
 #nodes_written = 0
 
 def makePoint(lon, lat):
-    retVal = {}
-    retVal["type"] = "Point"
-    retVal["coordinates"] = [float(lon), float(lat)]
-    #retVal = [float(lon), float(lat)]
-    return retVal
+    return {"type": "Point", "coordinates": [float(lon), float(lat)]}
 
 if write_nodes_and_quit:
     nodes = {}
     outputfile = open('nodes.json', 'w')
     def start_element(name, attrs):
-        if "node" == name:
+        if name == "node":
             global node_id
             node_id = attrs['id']
             nodes[node_id] = [attrs['lon'], attrs['lat']]
-        if "tag" == name and attrs['k'] in allowed_attr:
+        if name == "tag" and attrs['k'] in allowed_attr:
             global node_attr
             node_attr[attrs['k']] = attrs['v']
     def end_element(name):
-        if "node" == name:
+        if name == "node":
             global node_id
             global node_attr
             # if write_only_named and not node_attr.has_key('name'):
@@ -47,7 +58,7 @@ if write_nodes_and_quit:
             #     return
             outputkv = node_attr
             outputkv['geo'] = makePoint(nodes[node_id][0], nodes[node_id][1])
-            outputkv['nodeid'] = "n" + node_id
+            outputkv['nodeid'] = f"n{node_id}"
             outputfile.write(json.dumps(outputkv).encode("utf-8"))
             outputfile.write("\n")
             node_id = ""
@@ -73,36 +84,33 @@ if write_ways_and_quit:
     polyout = open('polygons.json', 'w')
     def start_element(name, attrs):
         global nodes_in_way
-        if "way" == name:
+        if name == "way":
             nodes_in_way = []
-        if "nd" == name:
+        if name == "nd":
             nodes_in_way.append(attrs['ref'])
-        if "tag" == name:
-            if "name" == attrs['k']:
+        if name == "tag":
+            if attrs['k'] == "name":
                 global way_name
                 way_name = attrs['v']
-            if "area" == attrs['k']:
+            if attrs['k'] == "area":
                 is_area = attrs['v']
     def end_element(name):
         global nodes_in_way
-        if "way" == name and len(nodes_in_way)>1:
+        if name == "way" and len(nodes_in_way) > 1:
             global way_name
             if write_only_named and (way_name == ""):
                 return
             is_poly = (nodes_in_way[0] == nodes_in_way[len(nodes_in_way)-1] and len(nodes_in_way)>=4)
             geojson = "{name: \"" + way_name + "\", geo: {type: '"
-            if is_poly:
-                geojson += "Polygon"
-            else:
-                geojson += "LineString"
+            geojson += "Polygon" if is_poly else "LineString"
             geojson += "', coordinates: ["
             if is_poly:
                 geojson += "["
             for i in xrange(0, len(nodes_in_way)-1):
                 nodeid = nodes_in_way[i]
-                geojson += "[" + nodes[nodeid][0] + "," + nodes[nodeid][1]  + "],"
+                geojson += f"[{nodes[nodeid][0]},{nodes[nodeid][1]}],"
             nodeid = nodes_in_way[len(nodes_in_way) - 1]
-            geojson += "[" + nodes[nodeid][0] + "," + nodes[nodeid][1]  + "]]"
+            geojson += f"[{nodes[nodeid][0]},{nodes[nodeid][1]}]]"
             if is_poly:
                 geojson += "]"
             geojson += "}}"
